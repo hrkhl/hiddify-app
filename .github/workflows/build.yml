@@ -15,8 +15,8 @@ on:
 env:
   IS_GITHUB_ACTIONS: 1
   CHANNEL: "${{ inputs.channel }}"
-  FLUTTER_VERSION: '3.24.0'
-  NDK_VERSION: r26d
+  FLUTTER_VERSION: '3.24.5'
+  NDK_VERSION: r27c
   UPLOAD_ARTIFACT: "${{ inputs.upload-artifact }}"
   TAG_NAME: "${{ inputs.tag-name }}"
   TARGET_NAME_AppImage: "Hiddify-Linux-x64"
@@ -36,8 +36,8 @@ jobs:
       draftBuildCode: ${{ steps.draftBuildCode.outputs.datetime }}
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v3
-      - uses: subosito/flutter-action@v2.16.0 #issue with 2.13
+      - uses: actions/checkout@v4
+      - uses: subosito/flutter-action@v2.18.0
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           channel: 'stable'
@@ -69,17 +69,17 @@ jobs:
             targets: aab
 
           - platform: windows
-            os: windows-2019
+            os: windows-2022
             aarch: amd64
             targets: exe,msix
 
           - platform: linux
-            os: ubuntu-22.04
+            os: ubuntu-24.04
             aarch: amd64
             targets: AppImage,deb,rpm
 
           - platform: macos
-            os: macos-13
+            os: macos-15
             aarch: universal
             targets: dmg,pkg
             
@@ -91,7 +91,7 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Import Apple Codesign Certificates
         if: ${{ inputs.upload-artifact && startsWith(matrix.os,'macos') }}
@@ -114,7 +114,7 @@ jobs:
 
       
       - name: Setup Flutter
-        uses: subosito/flutter-action@v2.16.0 #issue with 2.13
+        uses: subosito/flutter-action@v2.18.0
         with:
           flutter-version: ${{ env.FLUTTER_VERSION }}
           # flutter-version-file: pubspec.yaml
@@ -126,8 +126,8 @@ jobs:
         if: startsWith(matrix.platform,'android')
         uses: actions/setup-java@v4
         with:
-          distribution: 'zulu'
-          java-version: 17
+          distribution: 'temurin'
+          java-version: 21
       - name: Setup NDK
         if: startsWith(matrix.platform,'android')
         uses: nttld/setup-ndk@v1
@@ -137,11 +137,11 @@ jobs:
           add-to-path: true
           link-to-sdk: true
 
-      - name: Setup Gradle 8.1
+      - name: Setup Gradle 8.10.2
         if: startsWith(matrix.platform,'android')
-        uses: gradle/actions/setup-gradle@v3
+        uses: gradle/actions/setup-gradle@v4
         with:
-          gradle-version: 7.5
+          gradle-version: 8.10.2
       - name: Setup dependencies
         run: |
           make ${{ matrix.platform }}-install-dependencies
@@ -285,7 +285,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
         with:
           # by default, it uses a depth of 1
           # this fetches all history so that we can read each commit
@@ -335,7 +335,7 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - name: checkout
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
 
       - name: Download Artifact
         uses: actions/download-artifact@v4
