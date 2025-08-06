@@ -1,8 +1,11 @@
 [Desktop Entry]
-Name=Flutter Linux App
-Comment=Flutter Linux launcher icon
-Exec=app_icon
+Name=Hiddify
+Comment=Multi-platform proxy client based on Sing-box
+Exec=hiddify
 Icon=app_icon.png
 Terminal=false
 Type=Application
-Categories=Entertainment;
+Categories=Network;Security;
+Keywords=proxy;vpn;tunnel;privacy;network;
+StartupNotify=true
+StartupWMClass=hiddify

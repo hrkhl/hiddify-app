@@ -19,6 +19,9 @@ env:
   NDK_VERSION: r27c
   UPLOAD_ARTIFACT: "${{ inputs.upload-artifact }}"
   TAG_NAME: "${{ inputs.tag-name }}"
+  # Enable build optimizations
+  FLUTTER_BUILD_CACHE: true
+  PUB_CACHE: "${{ github.workspace }}/.pub-cache"
   TARGET_NAME_AppImage: "Hiddify-Linux-x64"
   TARGET_NAME_deb: "Hiddify-Debian-x64"
   TARGET_NAME_rpm: "Hiddify-rpm-x64"
@@ -83,11 +86,10 @@ jobs:
             aarch: universal
             targets: dmg,pkg
             
-          # - platform: ios
-          #   os: macos-14
-          #   aarch: universal
-          #   filename: hiddify-ios
-          #   targets: ipa
+          - platform: ios
+            os: macos-15
+            aarch: universal
+            targets: ipa
     runs-on: ${{ matrix.os }}
     steps:
       - name: checkout
@@ -121,6 +123,16 @@ jobs:
           channel: 'stable'
           cache: true
 
+      - name: Cache pub dependencies
+        uses: actions/cache@v4
+        with:
+          path: |
+            ${{ env.PUB_CACHE }}
+            ~/.pub-cache
+          key: ${{ runner.os }}-pub-${{ hashFiles('**/pubspec.lock') }}
+          restore-keys: |
+            ${{ runner.os }}-pub-
+
       
       - name: Setup Java
         if: startsWith(matrix.platform,'android')
@@ -142,6 +154,31 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: 8.10.2
+          cache-read-only: ${{ github.ref != 'refs/heads/main' }}
+
+      - name: Cache Android NDK
+        if: startsWith(matrix.platform,'android')
+        uses: actions/cache@v4
+        with:
+          path: |
+            ~/.android/ndk
+            ${{ env.ANDROID_HOME }}/ndk
+          key: ${{ runner.os }}-ndk-${{ env.NDK_VERSION }}
+          restore-keys: |
+            ${{ runner.os }}-ndk-
+      - name: Cache build artifacts
+        if: startsWith(matrix.platform,'android') || startsWith(matrix.platform,'linux') || startsWith(matrix.platform,'windows')
+        uses: actions/cache@v4
+        with:
+          path: |
+            build/
+            ~/.gradle/
+            ${{ runner.os == 'Windows' && '%LOCALAPPDATA%\\Pub\\Cache' || '~/.pub-cache' }}
+          key: ${{ runner.os }}-${{ matrix.platform }}-build-${{ hashFiles('**/pubspec.lock', '**/*.gradle', '**/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-${{ matrix.platform }}-build-
+            ${{ runner.os }}-${{ matrix.platform }}-
+
       - name: Setup dependencies
         run: |
           make ${{ matrix.platform }}-install-dependencies
@@ -177,11 +214,18 @@ jobs:
         run: |
           make ${{ matrix.platform }}-prepare
           tree
-      - name: Build ${{ matrix.platform }}
+          
+      - name: Build ${{ matrix.platform }} with optimizations
         env:
           SENTRY_DSN: ${{ secrets.SENTRY_DSN }}
+          # Enable build optimizations
+          DART_DEFINE_PROD: "true"
+          FLUTTER_BUILD_MODE: "release"
         run: |
+          set -e  # Exit on any error
+          echo "Starting build for ${{ matrix.platform }}..."
           make ${{ matrix.platform }}-release
+          echo "Build completed successfully for ${{ matrix.platform }}"
 
       - name: Code Sign
         if: ${{ inputs.upload-artifact && startsWith(matrix.platform,'windows') }}

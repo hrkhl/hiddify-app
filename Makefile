@@ -222,6 +222,22 @@ build-ios-libs:
 release: # Create a new tag for release.
 	@CORE_VERSION=$(core.version) bash -c ".github/change_version.sh "
 
+# Build all platforms for release
+build-all-platforms: android-release windows-release linux-release macos-release
+
+# Development build targets
+dev-build: get gen translate
+	flutter build --debug --verbose
+
+# Clean build artifacts
+clean:
+	flutter clean
+	$(RM) build
+	$(RM) dist
+	$(RM) $(ANDROID_OUT)
+	$(RM) $(IOS_OUT)
+	$(RM) $(DESKTOP_OUT)
+
 
 
 ios-temp-prepare: 
